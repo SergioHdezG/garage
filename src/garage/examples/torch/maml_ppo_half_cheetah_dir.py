@@ -3,10 +3,10 @@
 # pylint: disable=no-value-for-parameter
 import click
 import torch
+import gym_miniworld
 
 from garage import wrap_experiment
 from garage.envs import GymEnv, normalize
-from garage.envs.mujoco import HalfCheetahDirEnv
 from garage.experiment import MetaEvaluator
 from garage.experiment.deterministic import set_seed
 from garage.experiment.task_sampler import SetTaskSampler
@@ -40,9 +40,8 @@ def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
     """
     set_seed(seed)
     max_episode_length = 100
-    env = normalize(GymEnv(HalfCheetahDirEnv(),
-                           max_episode_length=max_episode_length),
-                    expected_action_scale=10.)
+    # env = normalize(GymEnv(HalfCheetahDirEnv(),max_episode_length=max_episode_length),expected_action_scale=10.)
+    env = GymEnv('MiniWorld-MazeS3Fast-v0', is_image=True, max_episode_length=300)
 
     policy = GaussianMLPPolicy(
         env_spec=env.spec,
@@ -56,8 +55,7 @@ def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
                                               hidden_nonlinearity=torch.tanh,
                                               output_nonlinearity=None)
 
-    task_sampler = SetTaskSampler(
-        HalfCheetahDirEnv,
+    task_sampler = SetTaskSampler(GymEnv('MiniWorld-MazeS3Fast-v0', max_episode_length=300),
         wrapper=lambda env, _: normalize(GymEnv(
             env, max_episode_length=max_episode_length),
                                          expected_action_scale=10.))
