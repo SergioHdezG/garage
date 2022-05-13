@@ -3,14 +3,15 @@
 # pylint: disable=no-value-for-parameter
 import click
 import torch
+from gym_miniworld.envs import MazeS3Fast
+import psutil
 
 from garage import wrap_experiment
 from garage.envs import GymEnv, normalize
-from garage.envs.mujoco import HalfCheetahDirEnv
 from garage.experiment import MetaEvaluator
 from garage.experiment.deterministic import set_seed
 from garage.experiment.task_sampler import SetTaskSampler
-from garage.sampler import RaySampler
+from garage.sampler import RaySampler, LocalSampler
 from garage.torch.algos import MAMLPPO
 from garage.torch.policies import GaussianMLPPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
@@ -23,9 +24,10 @@ from garage.trainer import Trainer
 @click.option('--episodes_per_task', default=40)
 @click.option('--meta_batch_size', default=20)
 @wrap_experiment(snapshot_mode='all')
-def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
-                              meta_batch_size):
+def maml_ppo_maze_task_dir(ctxt, seed, epochs, episodes_per_task,
+                           meta_batch_size):
     """Set up environment and algorithm and run the task.
+
     Args:
         ctxt (ExperimentContext): The experiment configuration used by
             :class:`~Trainer` to create the :class:`~Snapshotter`.
@@ -35,12 +37,13 @@ def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
         episodes_per_task (int): Number of episodes per epoch per task
             for training.
         meta_batch_size (int): Number of tasks sampled per batch.
+
     """
     set_seed(seed)
-    max_episode_length = 100
-    env = normalize(GymEnv(HalfCheetahDirEnv(),
-                           max_episode_length=max_episode_length),
-                    expected_action_scale=10.)
+    max_episode_length = 300
+    env = normalize(GymEnv(MazeS3Fast(),
+                           is_image=True,
+                           max_episode_length=max_episode_length))
 
     policy = GaussianMLPPolicy(
         env_spec=env.spec,
@@ -54,11 +57,15 @@ def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
                                               hidden_nonlinearity=torch.tanh,
                                               output_nonlinearity=None)
 
+    # task_sampler = SetTaskSampler(
+    #     MazeS3Fast,
+    #     wrapper=lambda env, _: normalize(GymEnv(
+    #         env, max_episode_length=max_episode_length)))
+
     task_sampler = SetTaskSampler(
-        HalfCheetahDirEnv,
+        MazeS3Fast,
         wrapper=lambda env, _: normalize(GymEnv(
-            env, max_episode_length=max_episode_length),
-                                         expected_action_scale=10.))
+            env, max_episode_length=max_episode_length)))
 
     meta_evaluator = MetaEvaluator(test_task_sampler=task_sampler,
                                    n_test_tasks=2,
@@ -66,9 +73,9 @@ def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
 
     trainer = Trainer(ctxt)
 
-    sampler = RaySampler(agents=policy,
-                         envs=env,
-                         max_episode_length=env.spec.max_episode_length)
+    sampler = LocalSampler(agents=policy,
+                           envs=env,
+                           max_episode_length=env.spec.max_episode_length)
 
     algo = MAMLPPO(env=env,
                    policy=policy,
@@ -87,4 +94,4 @@ def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
                   batch_size=episodes_per_task * env.spec.max_episode_length)
 
 
-maml_ppo_half_cheetah_dir()
+maml_ppo_maze_task_dir()
