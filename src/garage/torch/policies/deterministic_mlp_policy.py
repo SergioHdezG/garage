@@ -19,7 +19,7 @@ class DeterministicMLPPolicy(Policy):
     It uses a PyTorch neural network module to fit the function of pi(s).
     """
 
-    def __init__(self, env_spec, name='DeterministicMLPPolicy', **kwargs):
+    def __init__(self, env_spec, name='DeterministicMLPPolicy', is_image=None, **kwargs):
         """Initialize class with multiple attributes.
 
         Args:
@@ -31,6 +31,7 @@ class DeterministicMLPPolicy(Policy):
 
         self._obs_dim = env_spec.observation_space.flat_dim
         self._action_dim = env_spec.action_space.flat_dim
+        self.is_image = is_image
         self._module = MLPModule(input_dim=self._obs_dim,
                                  output_dim=self._action_dim,
                                  **kwargs)
@@ -46,6 +47,8 @@ class DeterministicMLPPolicy(Policy):
         Returns:
             torch.Tensor: Batch of actions.
         """
+        if self.is_image:
+            observations = observations.flatten(start_dim=1)
         return self._module(observations)
 
     def get_action(self, observation):
@@ -118,4 +121,6 @@ class DeterministicMLPPolicy(Policy):
                 observations)
         with torch.no_grad():
             x = self(torch.Tensor(observations).to(global_device()))
+            if self.is_image:
+                _, x = torch.max(x, 1)
             return x.cpu().numpy(), dict()

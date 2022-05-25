@@ -12,10 +12,11 @@ from garage.experiment import MetaEvaluator
 from garage.experiment.deterministic import set_seed
 from garage.experiment.task_sampler import SetTaskSampler
 from garage.sampler import RaySampler, LocalSampler
-from garage.torch.algos import MAMLPPO
-from garage.torch.policies import GaussianMLPPolicy
+from garage.torch.algos import MAMLPPO, MAMLTRPO
+from garage.torch.policies import GaussianMLPPolicy, DeterministicMLPPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
 from garage.trainer import Trainer
+from garage.envs.wrappers import pixel_observation
 
 
 @click.command()
@@ -24,7 +25,7 @@ from garage.trainer import Trainer
 @click.option('--episodes_per_task', default=40)
 @click.option('--meta_batch_size', default=20)
 @wrap_experiment(snapshot_mode='all')
-def maml_ppo_maze_task_dir(ctxt, seed, epochs, episodes_per_task,
+def maml_ppo_mlp_maze_task_dir(ctxt, seed, epochs, episodes_per_task,
                            meta_batch_size):
     """Set up environment and algorithm and run the task.
 
@@ -40,32 +41,27 @@ def maml_ppo_maze_task_dir(ctxt, seed, epochs, episodes_per_task,
 
     """
     set_seed(seed)
-    max_episode_length = 300
+    max_episode_length = 100
     env = normalize(GymEnv(MazeS3Fast(),
                            is_image=True,
                            max_episode_length=max_episode_length))
 
-    policy = GaussianMLPPolicy(
+    policy = DeterministicMLPPolicy(
         env_spec=env.spec,
         hidden_sizes=(64, 64),
         hidden_nonlinearity=torch.tanh,
-        output_nonlinearity=None,
+        output_nonlinearity=torch.nn.Softmax,
+        is_image=True
     )
 
     value_function = GaussianMLPValueFunction(env_spec=env.spec,
                                               hidden_sizes=(32, 32),
                                               hidden_nonlinearity=torch.tanh,
                                               output_nonlinearity=None)
-
-    # task_sampler = SetTaskSampler(
-    #     MazeS3Fast,
-    #     wrapper=lambda env, _: normalize(GymEnv(
-    #         env, max_episode_length=max_episode_length)))
-
     task_sampler = SetTaskSampler(
         MazeS3Fast,
         wrapper=lambda env, _: normalize(GymEnv(
-            env, max_episode_length=max_episode_length)))
+        env, is_image=True, max_episode_length=max_episode_length)))
 
     meta_evaluator = MetaEvaluator(test_task_sampler=task_sampler,
                                    n_test_tasks=2,
@@ -94,4 +90,4 @@ def maml_ppo_maze_task_dir(ctxt, seed, epochs, episodes_per_task,
                   batch_size=episodes_per_task * env.spec.max_episode_length)
 
 
-maml_ppo_maze_task_dir()
+maml_ppo_mlp_maze_task_dir()

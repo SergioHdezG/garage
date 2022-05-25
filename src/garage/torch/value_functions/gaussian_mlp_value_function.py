@@ -55,9 +55,11 @@ class GaussianMLPValueFunction(ValueFunction):
                  learn_std=True,
                  init_std=1.0,
                  layer_normalization=False,
-                 name='GaussianMLPValueFunction'):
+                 name='GaussianMLPValueFunction',
+                 is_image=None):
         super(GaussianMLPValueFunction, self).__init__(env_spec, name)
 
+        self.is_image = is_image
         input_dim = env_spec.observation_space.flat_dim
         output_dim = 1
 
@@ -91,6 +93,13 @@ class GaussianMLPValueFunction(ValueFunction):
                 objective (float).
 
         """
+        if self.is_image:
+            # Flatten the tensor in order to be fed into the value function
+            if len(obs.shape) > 4:
+                obs = obs.flatten(start_dim=2)
+            else:
+                obs = obs.flatten(start_dim=1)
+
         dist = self.module(obs)
         ll = dist.log_prob(returns.reshape(-1, 1))
         loss = -ll.mean()
@@ -109,4 +118,11 @@ class GaussianMLPValueFunction(ValueFunction):
                 shape :math:`(P, O*)`.
 
         """
+        if self.is_image:
+            # Flatten the tensor in order to be fed into the value function
+            if len(obs.shape) > 4:
+                obs = obs.flatten(start_dim=2)
+            else:
+                obs = obs.flatten(start_dim=1)
+
         return self.module(obs).mean.flatten(-2)

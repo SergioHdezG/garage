@@ -11,9 +11,9 @@ from garage.envs import GymEnv, normalize, MultiEnvWrapper
 from garage.experiment import MetaEvaluator
 from garage.experiment.deterministic import set_seed
 from garage.experiment.task_sampler import ConstructEnvsSampler
-from garage.sampler import RaySampler
+from garage.sampler import RaySampler, LocalSampler
 from garage.torch.algos import MAMLPPO
-from garage.torch.policies import GaussianMLPPolicy
+from garage.torch.policies import GaussianMLPPolicy, CategoricalCNNPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
 from garage.trainer import Trainer
 
@@ -41,23 +41,19 @@ def maml_ppo_maze_dir(ctxt, seed, epochs, episodes_per_task,
     """
     set_seed(seed)
     max_episode_length = 300
-    # env = normalize(GymEnv(MazeS3Fast(),
-    #                        is_image=True,
-    #                        max_episode_length=max_episode_length))
+    env = normalize(GymEnv(MazeS3Fast(),
+                           is_image=True,
+                           max_episode_length=max_episode_length))
 
     workers = psutil.cpu_count(logical=False)
-    envs = [normalize(GymEnv(MazeS3Fast(),
-                             is_image=True,
-                             max_episode_length=max_episode_length)) for _ in
-            range(workers)]
-    env = MultiEnvWrapper(envs,
-                          mode='vanilla')
+    env_constructors = [MazeS3Fast for _ in range(workers)]
+    task_sampler = ConstructEnvsSampler(env_constructors)
 
-    policy = GaussianMLPPolicy(
+    policy = CategoricalCNNPolicy(
         env_spec=env.spec,
-        hidden_sizes=(64, 64),
-        hidden_nonlinearity=torch.tanh,
-        output_nonlinearity=None,
+        image_format='NHWC',
+        hidden_channels=(64, 32),
+        kernel_sizes=(3, 3)
     )
 
     value_function = GaussianMLPValueFunction(env_spec=env.spec,
@@ -65,21 +61,27 @@ def maml_ppo_maze_dir(ctxt, seed, epochs, episodes_per_task,
                                               hidden_nonlinearity=torch.tanh,
                                               output_nonlinearity=None)
 
+    meta_evaluator = MetaEvaluator(test_task_sampler=task_sampler,
+                                   n_test_tasks=2,
+                                   n_test_episodes=10)
+
     trainer = Trainer(ctxt)
 
-    sampler = RaySampler(agents=policy,
-                         envs=env,
-                         max_episode_length=env.spec.max_episode_length)
+    sampler = LocalSampler(agents=policy,
+                           envs=env,
+                           max_episode_length=env.spec.max_episode_length)
 
     algo = MAMLPPO(env=env,
                    policy=policy,
                    sampler=sampler,
+                   task_sampler=task_sampler,
                    value_function=value_function,
                    meta_batch_size=meta_batch_size,
                    discount=0.99,
                    gae_lambda=1.,
                    inner_lr=0.1,
-                   num_grad_updates=1)
+                   num_grad_updates=1,
+                   meta_evaluator=meta_evaluator)
 
     trainer.setup(algo, env)
     trainer.train(n_epochs=epochs,
