@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""This is an example to train MAML-VPG on HalfCheetahDirEnv environment."""
+"""This is an example to train MAML-PPO on Maze environment."""
 # pylint: disable=no-value-for-parameter
 import click
 import torch
@@ -21,11 +21,11 @@ from garage.envs.wrappers import pixel_observation
 
 @click.command()
 @click.option('--seed', default=1)
-@click.option('--epochs', default=300)
+@click.option('--epochs', default=100)
 @click.option('--episodes_per_task', default=20)
 @click.option('--meta_batch_size', default=10)
 @wrap_experiment(snapshot_mode='all')
-def maml_ppo_cnn_maze_task_buena_dir(ctxt, seed, epochs, episodes_per_task,
+def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
                            meta_batch_size):
     """Set up environment and algorithm and run the task.
 
@@ -49,8 +49,9 @@ def maml_ppo_cnn_maze_task_buena_dir(ctxt, seed, epochs, episodes_per_task,
     policy = CategoricalCNNPolicy(
         env_spec=env.spec,
         image_format='NHWC',
-        hidden_channels=(3, 32),
-        kernel_sizes=(3, 5)
+        hidden_nonlinearity=torch.relu,
+        hidden_channels=(64, 32, 16),
+        kernel_sizes=(4, 4, 3)
     )
 
     value_function = GaussianMLPValueFunction(env_spec=env.spec,
@@ -91,4 +92,4 @@ def maml_ppo_cnn_maze_task_buena_dir(ctxt, seed, epochs, episodes_per_task,
                   batch_size=episodes_per_task * env.spec.max_episode_length)
 
 
-maml_ppo_cnn_maze_task_buena_dir()
+maml_ppo_cnn_maze_pickle_dir()
