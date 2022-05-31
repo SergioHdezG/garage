@@ -16,17 +16,17 @@ from garage.torch.algos import MAMLPPO, MAMLTRPO
 from garage.torch.policies import GaussianMLPPolicy, CategoricalCNNPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
 from garage.trainer import Trainer
-from garage.envs.wrappers import pixel_observation
+from garage.torch import set_gpu_mode
 
 
 @click.command()
 @click.option('--seed', default=1)
-@click.option('--epochs', default=100)
-@click.option('--episodes_per_task', default=20)
-@click.option('--meta_batch_size', default=10)
+@click.option('--epochs', default=30)
+@click.option('--episodes_per_task', default=5)
+@click.option('--meta_batch_size', default=20)
 @wrap_experiment(snapshot_mode='all')
 def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
-                           meta_batch_size):
+                                 meta_batch_size):
     """Set up environment and algorithm and run the task.
 
     Args:
@@ -63,7 +63,7 @@ def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
     task_sampler = SetTaskSampler(
         MazeS3Fast,
         wrapper=lambda env, _: normalize(GymEnv(
-        env, is_image=True, max_episode_length=max_episode_length)))
+            env, is_image=True, max_episode_length=max_episode_length)))
 
     meta_evaluator = MetaEvaluator(test_task_sampler=task_sampler,
                                    n_test_tasks=2,
@@ -71,9 +71,9 @@ def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
 
     trainer = Trainer(ctxt)
 
-    sampler = LocalSampler(agents=policy,
-                           envs=env,
-                           max_episode_length=env.spec.max_episode_length)
+    sampler = RaySampler(agents=policy,
+                         envs=env,
+                         max_episode_length=env.spec.max_episode_length)
 
     algo = MAMLPPO(env=env,
                    policy=policy,
@@ -87,9 +87,14 @@ def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
                    num_grad_updates=1,
                    meta_evaluator=meta_evaluator)
 
+    # send policy to GPU
+    if torch.cuda.is_available():
+        device = set_gpu_mode(True)
+        policy.to(device=device)
+
     trainer.setup(algo, env)
     trainer.train(n_epochs=epochs,
-                  batch_size=episodes_per_task * env.spec.max_episode_length)
+                  batch_size=episodes_per_task)
 
 
 maml_ppo_cnn_maze_pickle_dir()
