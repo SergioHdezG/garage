@@ -301,7 +301,7 @@ class ExperimentTemplate:
         if name is None:
             name = options['function'].__name__
         name = cls._augment_name(options, name, kwargs)
-        log_dir = options['log_dir']
+        log_dir = os.path.join(options['log_dir'], name)
         if log_dir is None:
             log_dir = ('{data}/local/{prefix}/{name}'.format(
                 data=os.path.join(os.getcwd(), 'data'),

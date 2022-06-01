@@ -24,7 +24,8 @@ from garage.torch import set_gpu_mode
 @click.option('--epochs', default=300)
 @click.option('--episodes_per_task', default=40)
 @click.option('--meta_batch_size', default=20)
-@wrap_experiment(snapshot_mode='all')
+@wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
+                 prefix='experiments')
 def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
                           meta_batch_size):
     """Set up environment and algorithm and run the task.
@@ -94,12 +95,12 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
         device = set_gpu_mode(True)
         policy.to(device=device)
 
-    # Set tensorboard
-    tb = program.TensorBoard()
-    tb.configure(
-        argv=[None, '--logdir', ctxt.snapshot_dir, '--host', '0.0.0.0'])
-    url = tb.launch()
-    print(f"Tensorflow listening on {url}")
+    # # Set tensorboard
+    # tb = program.TensorBoard()
+    # tb.configure(
+    #     argv=[None, '--logdir', ctxt.snapshot_dir, '--host', '0.0.0.0'])
+    # url = tb.launch()
+    # print(f"Tensorflow listening on {url}")
 
     trainer.setup(algo, env)
     trainer.train(n_epochs=epochs,
