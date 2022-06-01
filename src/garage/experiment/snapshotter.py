@@ -123,8 +123,6 @@ class Snapshotter:
 
         if file_name:
             with open(file_name, 'wb') as file:
-                # params.pop('env')  # TODO Implement custom __getstate__ and __setstate__ for miniworld envs
-                # params.pop('algo')
                 cloudpickle.dump(params, file)
 
     def load(self, load_dir, itr='last'):

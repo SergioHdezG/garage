@@ -21,7 +21,7 @@ from garage.torch import set_gpu_mode
 
 @click.command()
 @click.option('--seed', default=1)
-@click.option('--epochs', default=30)
+@click.option('--epochs', default=15)
 @click.option('--episodes_per_task', default=5)
 @click.option('--meta_batch_size', default=20)
 @wrap_experiment(snapshot_mode='all')
@@ -94,7 +94,8 @@ def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
 
     trainer.setup(algo, env)
     trainer.train(n_epochs=epochs,
-                  batch_size=episodes_per_task)
+                  batch_size=episodes_per_task) # batch size no more than
+    # 400 or 500 aprox due to RAM limitations (128GB)
 
 
 maml_ppo_cnn_maze_pickle_dir()
