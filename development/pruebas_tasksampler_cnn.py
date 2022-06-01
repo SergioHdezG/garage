@@ -11,9 +11,9 @@ from garage.envs import GymEnv, normalize
 from garage.experiment import MetaEvaluator
 from garage.experiment.deterministic import set_seed
 from garage.experiment.task_sampler import SetTaskSampler
-from garage.sampler import RaySampler, LocalSampler
+from garage.sampler import RaySampler, VecWorker
 from garage.torch.algos import MAMLPPO, MAMLTRPO
-from garage.torch.policies import GaussianMLPPolicy, CategoricalCNNPolicy
+from garage.torch.policies import CategoricalCNNPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
 from garage.trainer import Trainer
 from garage.torch import set_gpu_mode
@@ -21,12 +21,12 @@ from garage.torch import set_gpu_mode
 
 @click.command()
 @click.option('--seed', default=1)
-@click.option('--epochs', default=15)
-@click.option('--episodes_per_task', default=5)
+@click.option('--epochs', default=300)
+@click.option('--episodes_per_task', default=40)
 @click.option('--meta_batch_size', default=20)
 @wrap_experiment(snapshot_mode='all')
-def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
-                                 meta_batch_size):
+def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
+                          meta_batch_size):
     """Set up environment and algorithm and run the task.
 
     Args:
@@ -41,7 +41,7 @@ def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
 
     """
     set_seed(seed)
-    max_episode_length = 30
+    max_episode_length = 300
     env = normalize(GymEnv(MazeS3Fast(),
                            is_image=True,
                            max_episode_length=max_episode_length))
@@ -73,6 +73,8 @@ def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
 
     sampler = RaySampler(agents=policy,
                          envs=env,
+                         worker_class=VecWorker,
+                         worker_args=dict(n_envs=12),
                          max_episode_length=env.spec.max_episode_length)
 
     algo = MAMLPPO(env=env,
@@ -92,10 +94,17 @@ def maml_ppo_cnn_maze_pickle_dir(ctxt, seed, epochs, episodes_per_task,
         device = set_gpu_mode(True)
         policy.to(device=device)
 
+    # Set tensorboard
+    tb = program.TensorBoard()
+    tb.configure(
+        argv=[None, '--logdir', ctxt.snapshot_dir, '--host', '0.0.0.0'])
+    url = tb.launch()
+    print(f"Tensorflow listening on {url}")
+
     trainer.setup(algo, env)
     trainer.train(n_epochs=epochs,
-                  batch_size=episodes_per_task) # batch size no more than
+                  batch_size=episodes_per_task)  # batch size no more than
     # 400 or 500 aprox due to RAM limitations (128GB)
 
 
-maml_ppo_cnn_maze_pickle_dir()
+maml_ppo_cnn_maze_dir()
