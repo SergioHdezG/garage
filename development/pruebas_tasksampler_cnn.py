@@ -4,7 +4,6 @@
 import click
 import torch
 from gym_miniworld.envs import MazeS3Fast
-import psutil
 
 from garage import wrap_experiment
 from garage.envs import GymEnv, normalize
@@ -21,7 +20,7 @@ from garage.torch import set_gpu_mode
 
 @click.command()
 @click.option('--seed', default=1)
-@click.option('--epochs', default=300)
+@click.option('--epochs', default=100)
 @click.option('--episodes_per_task', default=40)
 @click.option('--meta_batch_size', default=20)
 @wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
@@ -42,7 +41,7 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
 
     """
     set_seed(seed)
-    max_episode_length = 300
+    max_episode_length = 150
     env = normalize(GymEnv(MazeS3Fast(),
                            is_image=True,
                            max_episode_length=max_episode_length))
@@ -87,20 +86,13 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
                    discount=0.99,
                    gae_lambda=1.,
                    inner_lr=0.1,
-                   num_grad_updates=1,
+                   num_grad_updates=3,
                    meta_evaluator=meta_evaluator)
 
     # send policy to GPU
     if torch.cuda.is_available():
         device = set_gpu_mode(True)
         policy.to(device=device)
-
-    # # Set tensorboard
-    # tb = program.TensorBoard()
-    # tb.configure(
-    #     argv=[None, '--logdir', ctxt.snapshot_dir, '--host', '0.0.0.0'])
-    # url = tb.launch()
-    # print(f"Tensorflow listening on {url}")
 
     trainer.setup(algo, env)
     trainer.train(n_epochs=epochs,

@@ -1,0 +1,11 @@
+# Create environment
+cd ..
+conda env create -f environment.yml
+conda activate garage
+
+# install gym-miniworld
+cd ..
+git clone https://github.com/CarlosGual/gym-miniworld.git
+cd gym-miniworld
+pip install -e .
+cd ..
