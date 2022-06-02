@@ -5,7 +5,7 @@ source ~/miniconda3/etc/profile.d/conda.sh
 cd ..
 conda env create -f environment.yml
 conda activate garage
-pip install -e '.[all,dev]'
+pip install -e .
 
 # install gym-miniworld
 cd ..
