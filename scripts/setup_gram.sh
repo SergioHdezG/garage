@@ -1,4 +1,5 @@
 # Create environment
+source ~/miniconda3/etc/profile.d/conda.sh
 cd ..
 conda env create -f environment.yml
 conda activate garage
