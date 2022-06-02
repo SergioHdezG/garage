@@ -75,7 +75,7 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
     sampler = RaySampler(agents=policy,
                          envs=env,
                          worker_class=VecWorker,
-                         worker_args=dict(n_envs=12),
+                         worker_args=dict(n_envs=4),
                          max_episode_length=env.spec.max_episode_length)
 
     algo = MAMLPPO(env=env,
