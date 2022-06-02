@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Create environment
 source ~/miniconda3/etc/profile.d/conda.sh
 cd ..
