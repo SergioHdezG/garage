@@ -20,7 +20,7 @@ from garage.torch import set_gpu_mode
 
 @click.command()
 @click.option('--seed', default=1)
-@click.option('--epochs', default=100)
+@click.option('--epochs', default=300)
 @click.option('--episodes_per_task', default=40)
 @click.option('--meta_batch_size', default=20)
 @wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
@@ -41,7 +41,7 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
 
     """
     set_seed(seed)
-    max_episode_length = 150
+    max_episode_length = 300
     env = normalize(GymEnv(MazeS3Fast(),
                            is_image=True,
                            max_episode_length=max_episode_length))
@@ -50,8 +50,8 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
         env_spec=env.spec,
         image_format='NHWC',
         hidden_nonlinearity=torch.relu,
-        hidden_channels=(64, 32, 16),
-        kernel_sizes=(4, 4, 3)
+        hidden_channels=(128, 64, 32, 16),
+        kernel_sizes=(5, 4, 4, 3)
     )
 
     value_function = GaussianMLPValueFunction(env_spec=env.spec,
@@ -77,7 +77,7 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
                          worker_args=dict(n_envs=4),
                          max_episode_length=env.spec.max_episode_length)
 
-    algo = MAMLPPO(env=env,
+    algo = MAMLTRPO(env=env,
                    policy=policy,
                    sampler=sampler,
                    task_sampler=task_sampler,
