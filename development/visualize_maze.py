@@ -4,7 +4,7 @@ import time
 from garage.experiment import Snapshotter
 
 snapshotter = Snapshotter()
-data = snapshotter.load('/home/carlos/resultados/maml_ppo_cnn_maze_dir_penelope')
+data = snapshotter.load('/home/carlos/resultados/maml_ppo_cnn_maze_no_meta')
 policy = data['algo'].policy
 
 # You can also access other components of the experiment
