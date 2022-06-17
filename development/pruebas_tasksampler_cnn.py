@@ -3,7 +3,7 @@
 # pylint: disable=no-value-for-parameter
 import click
 import torch
-from gym_miniworld.envs import MazeS3Fast
+from gym_miniworld.envs import MazeS3Fast, MazeS3
 
 from garage import wrap_experiment
 from garage.envs import GymEnv, normalize
@@ -20,13 +20,13 @@ from garage.torch import set_gpu_mode
 
 @click.command()
 @click.option('--seed', default=1)
-@click.option('--epochs', default=1500)
-@click.option('--episodes_per_task', default=20)
-@click.option('--meta_batch_size', default=20)
+@click.option('--epochs', default=3)
+@click.option('--episodes_per_task', default=5)
+@click.option('--meta_batch_size', default=5)
 @wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
                  prefix='experiments')
-def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
-                          meta_batch_size):
+def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
+                             meta_batch_size):
     """Set up environment and algorithm and run the task.
 
     Args:
@@ -42,7 +42,7 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
     """
     set_seed(seed)
     max_episode_length = 300
-    env = normalize(GymEnv(MazeS3Fast(),
+    env = normalize(GymEnv(MazeS3(),
                            is_image=True,
                            max_episode_length=max_episode_length))
 
@@ -66,15 +66,15 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
             env, is_image=True, max_episode_length=max_episode_length)))
 
     meta_evaluator = MetaEvaluator(test_task_sampler=task_sampler,
-                                   n_test_tasks=10,
-                                   n_test_episodes=10)
+                                   n_test_tasks=5,
+                                   n_test_episodes=5)
 
     trainer = Trainer(ctxt)
 
     sampler = RaySampler(agents=policy,
                          envs=env,
-                         worker_class=VecWorker,
-                         worker_args=dict(n_envs=6),
+                         # worker_class=VecWorker,
+                         # worker_args=dict(n_envs=4),
                          max_episode_length=env.spec.max_episode_length)
 
     algo = MAMLPPO(env=env,
@@ -99,4 +99,4 @@ def maml_ppo_cnn_maze_dir(ctxt, seed, epochs, episodes_per_task,
     # 400 or 500 aprox due to RAM limitations (128GB)
 
 
-maml_ppo_cnn_maze_dir()
+maml_ppo_cnn_maze()

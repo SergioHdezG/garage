@@ -90,7 +90,7 @@ class SetTaskUpdate(EnvUpdate):
             garage.Env: The (possibly wrapped) environment.
 
         """
-        env = self._env_type()
+        env = self._env_type(task=self._task)
         env.set_task(self._task)
         if self._wrapper_cons is not None:
             env = self._wrapper_cons(env, self._task)

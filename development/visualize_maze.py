@@ -4,7 +4,7 @@ import time
 from garage.experiment import Snapshotter
 
 snapshotter = Snapshotter()
-data = snapshotter.load('/home/carlos/resultados/maml_ppo_cnn_maze_no_meta')
+data = snapshotter.load('/home/carlos/resultados/maml_ppo_cnn_maze_dir')
 policy = data['algo'].policy
 
 # You can also access other components of the experiment
@@ -20,7 +20,8 @@ policy.reset()
 while steps < max_steps and not done:
     action, _ = policy.get_action(obs)
     result = env.step(action)
-    env.render('human')  # Render the environment (optional)
+    print(result.terminal, result.timeout, result.reward)
+    env.render_top_view('human')  # Render the environment (optional)
     obs = result.observation
     steps += 1
     time.sleep(0.1)
