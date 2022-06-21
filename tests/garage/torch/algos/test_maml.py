@@ -11,17 +11,17 @@ from garage.torch.algos import MAMLPPO
 from garage.torch.policies import GaussianMLPPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
 
-try:
-    # pylint: disable=unused-import
-    import mujoco_py  # noqa: F401
-except ImportError:
-    pytest.skip('To use mujoco-based features, please install garage[mujoco].',
-                allow_module_level=True)
-except Exception:  # pylint: disable=broad-except
-    pytest.skip(
-        'Skipping tests, failed to import mujoco. Do you have a '
-        'valid mujoco key installed?',
-        allow_module_level=True)
+# try:
+#     # pylint: disable=unused-import
+#     import mujoco_py  # noqa: F401
+# except ImportError:
+#     pytest.skip('To use mujoco-based features, please install garage[mujoco].',
+#                 allow_module_level=True)
+# except Exception:  # pylint: disable=broad-except
+#     pytest.skip(
+#         'Skipping tests, failed to import mujoco. Do you have a '
+#         'valid mujoco key installed?',
+#         allow_module_level=True)
 
 from garage.envs.mujoco import HalfCheetahDirEnv  # isort:skip
 
@@ -89,17 +89,17 @@ class TestMAML:
         worker = WorkerFactory(seed=100, max_episode_length=100)
         sampler = LocalSampler.from_worker_factory(worker, self.policy,
                                                    self.env)
-
+        algo = self.algo
         self.policy.apply(partial(self._set_params, 0.1))
-        adapt_policy = self.algo.get_exploration_policy()
+        adapt_policy = algo.get_exploration_policy()
         eps = sampler.obtain_samples(0, 100, adapt_policy)
-        self.algo.adapt_policy(adapt_policy, eps)
+        adapted = algo.adapt_policy(adapt_policy, eps)
 
         # Old policy should remain untouched
         self.policy.apply(partial(self._test_params, 0.1))
 
         # Adapted policy should not be identical to old policy
-        for v1, v2 in zip(adapt_policy.parameters(), self.policy.parameters()):
+        for v1, v2 in zip(adapted.parameters(), self.policy.parameters()):
             if v1.data.ne(v2.data).sum() > 0:
                 break
         else:

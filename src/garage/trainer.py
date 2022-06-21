@@ -109,7 +109,7 @@ class Trainer:
         self._stats = ExperimentStats(total_itr=0,
                                       total_env_steps=0,
                                       total_epoch=0,
-                                      last_episode=None)
+                                      last_episode=True)
 
         self._algo = None
         self._env = None

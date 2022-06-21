@@ -22,7 +22,8 @@ from garage.trainer import Trainer
 @click.option('--epochs', default=300)
 @click.option('--episodes_per_task', default=40)
 @click.option('--meta_batch_size', default=20)
-@wrap_experiment(snapshot_mode='all')
+@wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
+                 prefix='experiments')
 def maml_ppo_half_cheetah_dir(ctxt, seed, epochs, episodes_per_task,
                               meta_batch_size):
     """Set up environment and algorithm and run the task.

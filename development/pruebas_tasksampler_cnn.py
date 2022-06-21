@@ -19,17 +19,19 @@ from garage.torch import set_gpu_mode
 
 
 @click.command()
-@click.option('--seed', default=1)
-@click.option('--epochs', default=3)
+@click.option('--seed', default=2)
+@click.option('--epochs', default=30)
 @click.option('--episodes_per_task', default=5)
 @click.option('--meta_batch_size', default=5)
+@click.option('--max_episode_length', default=30)
 @wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
                  prefix='experiments')
 def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
-                             meta_batch_size):
+                      meta_batch_size, max_episode_length):
     """Set up environment and algorithm and run the task.
 
     Args:
+        max_episode_length:
         ctxt (ExperimentContext): The experiment configuration used by
             :class:`~Trainer` to create the :class:`~Snapshotter`.
         seed (int): Used to seed the random number generator to produce
@@ -41,7 +43,6 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
 
     """
     set_seed(seed)
-    max_episode_length = 300
     env = normalize(GymEnv(MazeS3(),
                            is_image=True,
                            max_episode_length=max_episode_length))
@@ -66,8 +67,9 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
             env, is_image=True, max_episode_length=max_episode_length)))
 
     meta_evaluator = MetaEvaluator(test_task_sampler=task_sampler,
-                                   n_test_tasks=5,
-                                   n_test_episodes=5)
+                                   n_test_tasks=meta_batch_size,
+                                   n_test_episodes=episodes_per_task,
+                                   n_exploration_eps=episodes_per_task)
 
     trainer = Trainer(ctxt)
 
@@ -95,7 +97,8 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
 
     trainer.setup(algo, env)
     trainer.train(n_epochs=epochs,
-                  batch_size=episodes_per_task)  # batch size no more than
+                  batch_size=episodes_per_task,
+                  store_episodes=True)  # batch size no more than
     # 400 or 500 aprox due to RAM limitations (128GB)
 
 

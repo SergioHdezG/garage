@@ -6,7 +6,6 @@ from garage import EpisodeBatch, log_multitask_performance
 from garage.experiment.deterministic import get_seed
 from garage.sampler import DefaultWorker, LocalSampler, WorkerFactory
 
-
 class MetaEvaluator:
     """Evaluates Meta-RL algorithms on test environments.
 
