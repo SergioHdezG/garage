@@ -3,7 +3,7 @@
 # pylint: disable=no-value-for-parameter
 import click
 import torch
-from gym_miniworld.envs import MazeS3Fast, MazeS3
+from gym_miniworld.envs import MazeS3Fast, MazeS3, MazeS5
 
 from garage import wrap_experiment
 from garage.envs import GymEnv, normalize
@@ -12,7 +12,7 @@ from garage.experiment.deterministic import set_seed
 from garage.experiment.task_sampler import SetTaskSampler
 from garage.sampler import RaySampler, VecWorker
 from garage.torch.algos import MAMLPPO, MAMLTRPO
-from garage.torch.policies import CategoricalCNNPolicy
+from garage.torch.policies import CategoricalCNNPolicy, ResNetCNNPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
 from garage.trainer import Trainer
 from garage.torch import set_gpu_mode
@@ -23,11 +23,13 @@ from garage.torch import set_gpu_mode
 @click.option('--epochs', default=30)
 @click.option('--episodes_per_task', default=5)
 @click.option('--meta_batch_size', default=5)
-@click.option('--max_episode_length', default=30)
+@click.option('--max_episode_length', default=300)
+@click.option('--inner_lr', default=0.01)
+@click.option('--outer_lr', default=1e-3)
 @wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
                  prefix='experiments')
 def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
-                      meta_batch_size, max_episode_length):
+                      meta_batch_size, max_episode_length, inner_lr, outer_lr):
     """Set up environment and algorithm and run the task.
 
     Args:
@@ -43,16 +45,13 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
 
     """
     set_seed(seed)
-    env = normalize(GymEnv(MazeS3(),
+    env = normalize(GymEnv(MazeS3Fast(),
                            is_image=True,
                            max_episode_length=max_episode_length))
 
-    policy = CategoricalCNNPolicy(
+    policy = ResNetCNNPolicy(
         env_spec=env.spec,
-        image_format='NHWC',
         hidden_nonlinearity=torch.relu,
-        hidden_channels=(128, 64, 32, 16),
-        kernel_sizes=(5, 4, 4, 3)
     )
 
     value_function = GaussianMLPValueFunction(env_spec=env.spec,
@@ -86,7 +85,8 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
                    value_function=value_function,
                    meta_batch_size=meta_batch_size,
                    gae_lambda=1.,
-                   inner_lr=0.1,
+                   inner_lr=inner_lr,
+                   outer_lr=outer_lr,
                    num_grad_updates=1,
                    meta_evaluator=meta_evaluator)
 

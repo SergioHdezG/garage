@@ -74,6 +74,7 @@ class MAMLPPO(MAML):
             (torch.optim.Adam, dict(lr=inner_lr)), policy)
         vf_optimizer = OptimizerWrapper((torch.optim.Adam, dict(lr=inner_lr)),
                                         value_function)
+        meta_vf_optimizer = (torch.optim.Adam, dict())
 
         inner_algo = PPO(env.spec,
                          policy,
@@ -103,4 +104,5 @@ class MAMLPPO(MAML):
                          outer_lr=outer_lr,
                          num_grad_updates=num_grad_updates,
                          meta_evaluator=meta_evaluator,
-                         evaluate_every_n_epochs=evaluate_every_n_epochs)
+                         evaluate_every_n_epochs=evaluate_every_n_epochs,
+                         meta_vf_optimizer=torch.optim.Adam)

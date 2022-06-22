@@ -463,7 +463,8 @@ class MAML:
             torch.Tensor: Computed entropy value.
 
         """
-        obs = torch.stack([samples.observations for samples in task_samples])
+        # TODO no me fío de samples.observations[-1]. Lo he metido a dedo pa que furule.
+        obs = torch.cat([samples.observations for samples in task_samples])
         # pylint: disable=protected-access
         stddev = self._inner_algo._compute_policy_stddev(obs)
         return stddev.mean()

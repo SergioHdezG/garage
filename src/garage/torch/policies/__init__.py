@@ -12,8 +12,10 @@ from garage.torch.policies.policy import Policy
 from garage.torch.policies.tanh_gaussian_mlp_policy import (
     TanhGaussianMLPPolicy)
 from garage.torch.policies.random_policy import RandomPolicy
+from garage.torch.policies.resnet_cnn_policy import ResNetCNNPolicy
 
 __all__ = [
+    'ResNetCNNPolicy'
     'CategoricalCNNPolicy',
     'DeterministicMLPPolicy',
     'DiscreteCNNPolicy',
