@@ -43,6 +43,7 @@ dependencies:
   - python=3.7.13=h12debd9_0
   - python_abi=3.7=2_cp37m
   - pytorch=1.8.1=py3.7_cpu_0
+  - torchvision=0.9.1
   - readline=8.1.2=h7f8727e_1
   - setuptools=61.2.0=py37h06a4308_0
   - six=1.16.0=pyh6c4a22f_0
