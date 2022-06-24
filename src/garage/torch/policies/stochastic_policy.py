@@ -45,6 +45,7 @@ class StochasticPolicy(Policy, abc.ABC):
                 observation = list_to_tensor(observation)
             observation = observation.unsqueeze(0)
             action, agent_infos = self.get_actions(observation)
+            # Deleted action[0] for resnet policy :(
             return action[0], {k: v[0] for k, v in agent_infos.items()}
 
     def get_actions(self, observations):

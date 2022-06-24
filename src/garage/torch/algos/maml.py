@@ -167,13 +167,10 @@ class MAML:
         with torch.no_grad():
             policy_entropy = self._compute_policy_entropy(
                 [task_samples[0] for task_samples in all_samples])
-            stddev = self._compute_policy_stddev(
-                [task_samples[0] for task_samples in all_samples])
             average_return = self._log_performance(
                 itr, all_samples, meta_objective.item(), loss_after.item(),
                 kl_before.item(), kl_after.item(),
-                policy_entropy.mean().item(),
-                stddev.mean().item(), ev)
+                policy_entropy.mean().item(), ev)
 
         if self._meta_evaluator and itr % self._evaluate_every_n_epochs == 0:
             self._meta_evaluator.evaluate(self)
@@ -518,8 +515,7 @@ class MAML:
                                  baselines)
 
     def _log_performance(self, itr, all_samples, loss_before, loss_after,
-                         kl_before, kl, policy_entropy, stddev,
-                         explained_variance):
+                         kl_before, kl, policy_entropy, explained_variance):
         """Evaluate performance of this batch.
 
         Args:
@@ -562,7 +558,6 @@ class MAML:
             tabular.record('KLBefore', kl_before)
             tabular.record('KLAfter', kl)
             tabular.record('Entropy', policy_entropy)
-            tabular.record('StandardDeviation', stddev)
         tabular.record(f'{self._value_function.name}/ExplainedVariance',
                        explained_variance)
 

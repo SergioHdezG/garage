@@ -4,7 +4,7 @@ from dowel import logger, tabular
 
 from garage import EpisodeBatch, log_multitask_performance
 from garage.experiment.deterministic import get_seed
-from garage.sampler import DefaultWorker, LocalSampler, WorkerFactory
+from garage.sampler import DefaultWorker, LocalSampler, WorkerFactory, RaySampler
 
 class MetaEvaluator:
     """Evaluates Meta-RL algorithms on test environments.
@@ -79,7 +79,7 @@ class MetaEvaluator:
         if self._test_sampler is None:
             env = env_updates[0]()
             self._max_episode_length = env.spec.max_episode_length
-            self._test_sampler = LocalSampler.from_worker_factory(
+            self._test_sampler = RaySampler.from_worker_factory(
                 WorkerFactory(seed=get_seed(),
                               max_episode_length=self._max_episode_length,
                               n_workers=1,

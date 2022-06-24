@@ -2,7 +2,7 @@
 import akro
 import torch
 from torch import nn
-from torchvision import models
+from torchvision import models, transforms
 
 from garage.torch.modules import MultiHeadedMLPModule
 from garage.torch.policies.stochastic_policy import StochasticPolicy
@@ -86,8 +86,11 @@ class ResNetCNNPolicy(StochasticPolicy):
 
         self.freeze = freeze
         self._resnet_module = models.resnet18(pretrained=True)
+        self._preprocess = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                std=[0.229, 0.224, 0.225])
 
         if self.freeze:
+            self._resnet_module.eval()
             for param in self._resnet_module.parameters():
                 param.requires_grad = False
 
@@ -122,8 +125,14 @@ class ResNetCNNPolicy(StochasticPolicy):
         # We're given flattened observations.
         observations = observations.reshape(
             -1, *self._env_spec.observation_space.shape)
-        resnet_output = self._resnet_module(observations)
+        # Reshape to be compatible with NCHW
+        obs = observations.permute((0, 3, 1, 2))
+        obs = self._preprocess(obs)
+        if torch.cuda.is_available():
+            obs.to('cuda')
+        resnet_output = self._resnet_module(obs)
+        resnet_output = resnet_output.squeeze()
         mlp_output = self._mlp_module(resnet_output)[0]
-        logits = torch.softmax(mlp_output, axis=1)
-        dist = torch.distributions.Categorical(logits=logits)
+        probs = torch.softmax(mlp_output, dim=0)
+        dist = torch.distributions.Categorical(probs=probs)
         return dist, {}

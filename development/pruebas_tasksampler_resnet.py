@@ -21,14 +21,14 @@ from garage.torch import set_gpu_mode
 @click.command()
 @click.option('--seed', default=27)
 @click.option('--epochs', default=300)
-@click.option('--episodes_per_task', default=1)
-@click.option('--meta_batch_size', default=1)
-@click.option('--max_episode_length', default=30)
+@click.option('--episodes_per_task', default=15)
+@click.option('--meta_batch_size', default=15)
+@click.option('--max_episode_length', default=150)
 @click.option('--inner_lr', default=0.01)
 @click.option('--outer_lr', default=1e-3)
 @wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
                  prefix='experiments')
-def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
+def maml_ppo_resnet_maze(ctxt, seed, epochs, episodes_per_task,
                          meta_batch_size, max_episode_length, inner_lr,
                          outer_lr):
     """Set up environment and algorithm and run the task.
@@ -50,12 +50,10 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
                  is_image=True,
                  max_episode_length=max_episode_length)
 
-    policy = CategoricalCNNPolicy(
+    policy = ResNetCNNPolicy(
         env_spec=env.spec,
-        image_format='NHWC',
         hidden_nonlinearity=torch.relu,
-        hidden_channels=(128, 64, 32, 16),
-        kernel_sizes=(5, 4, 4, 3)
+        hidden_sizes=(512, 256)
     )
 
     value_function = GaussianMLPValueFunction(env_spec=env.spec,
@@ -72,14 +70,17 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
     meta_evaluator = MetaEvaluator(test_task_sampler=task_sampler,
                                    n_test_tasks=meta_batch_size,
                                    n_test_episodes=episodes_per_task,
-                                   n_exploration_eps=episodes_per_task)
+                                   n_exploration_eps=episodes_per_task,
+                                   worker_class=VecWorker,
+                                   worker_args=dict(n_envs=2),
+                                   )
 
     trainer = Trainer(ctxt)
 
     sampler = RaySampler(agents=policy,
                          envs=env,
-                         # worker_class=VecWorker,
-                         # worker_args=dict(n_envs=4),
+                         worker_class=VecWorker,
+                         worker_args=dict(n_envs=2),
                          max_episode_length=env.spec.max_episode_length)
 
     algo = MAMLPPO(env=env,
@@ -92,7 +93,8 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
                    inner_lr=inner_lr,
                    outer_lr=outer_lr,
                    num_grad_updates=1,
-                   meta_evaluator=meta_evaluator)
+                   meta_evaluator=meta_evaluator,
+                   evaluate_every_n_epochs=5)
 
     # send policy to GPU
     if torch.cuda.is_available():
@@ -106,4 +108,4 @@ def maml_ppo_cnn_maze(ctxt, seed, epochs, episodes_per_task,
     # 400 or 500 aprox due to RAM limitations (128GB)
 
 
-maml_ppo_cnn_maze()
+maml_ppo_resnet_maze()
