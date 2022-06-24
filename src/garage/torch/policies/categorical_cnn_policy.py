@@ -135,6 +135,6 @@ class CategoricalCNNPolicy(StochasticPolicy):
             -1, *self._env_spec.observation_space.shape)
         cnn_output = self._cnn_module(observations)
         mlp_output = self._mlp_module(cnn_output)[0]
-        logits = torch.softmax(mlp_output, axis=1)
-        dist = torch.distributions.Categorical(logits=logits)
+        probs = torch.softmax(mlp_output, axis=1)
+        dist = torch.distributions.Categorical(probs=probs)
         return dist, {}
