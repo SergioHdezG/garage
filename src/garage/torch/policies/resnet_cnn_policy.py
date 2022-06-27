@@ -67,7 +67,7 @@ class ResNetCNNPolicy(StochasticPolicy):
                  env_spec,
                  *,
                  freeze=True,
-                 hidden_sizes=(32, 32),
+                 hidden_sizes=(512, 256),
                  hidden_nonlinearity=torch.tanh,
                  hidden_w_init=nn.init.xavier_uniform_,
                  hidden_b_init=nn.init.zeros_,
@@ -131,8 +131,9 @@ class ResNetCNNPolicy(StochasticPolicy):
         if torch.cuda.is_available():
             obs.to('cuda')
         resnet_output = self._resnet_module(obs)
-        resnet_output = resnet_output.squeeze()
+        # Delete non batch dimensions
+        resnet_output = resnet_output.reshape(resnet_output.shape[0], -1)
         mlp_output = self._mlp_module(resnet_output)[0]
-        probs = torch.softmax(mlp_output, dim=0)
+        probs = torch.softmax(mlp_output, dim=1)
         dist = torch.distributions.Categorical(probs=probs)
         return dist, {}
