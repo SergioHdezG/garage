@@ -21,9 +21,9 @@ from garage.torch import set_gpu_mode
 @click.command()
 @click.option('--seed', default=27)
 @click.option('--epochs', default=150)
-@click.option('--episodes_per_task', default=15)
-@click.option('--meta_batch_size', default=15)
-@click.option('--max_episode_length', default=150)
+@click.option('--episodes_per_task', default=5)
+@click.option('--meta_batch_size', default=5)
+@click.option('--max_episode_length', default=35)
 @click.option('--inner_lr', default=0.01)
 @click.option('--outer_lr', default=1e-3)
 @wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
