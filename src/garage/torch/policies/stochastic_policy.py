@@ -33,10 +33,14 @@ class StochasticPolicy(Policy, abc.ABC):
             observation = self._env_spec.observation_space.flatten(observation)
         elif isinstance(observation,
                         np.ndarray) and len(observation.shape) > 1:
-            observation = self._env_spec.observation_space.flatten(observation)
+            # TODO[Sergio]: si dim es 3 asumimos que es una imagen
+            if  len(observation.shape) < 3:
+                observation = self._env_spec.observation_space.flatten(observation)
         elif isinstance(observation,
                         torch.Tensor) and len(observation.shape) > 1:
-            observation = torch.flatten(observation)
+            # TODO[Sergio]: si dim es 3 asumimos que es una imagen
+            if  len(observation.shape) < 3:
+                observation = torch.flatten(observation)
         with torch.no_grad():
             if isinstance(observation, np.ndarray):
                 observation = np_to_torch(observation)

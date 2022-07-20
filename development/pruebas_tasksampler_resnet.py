@@ -26,7 +26,7 @@ from garage.torch import set_gpu_mode
 @click.option('--max_episode_length', default=35)
 @click.option('--inner_lr', default=0.01)
 @click.option('--outer_lr', default=1e-3)
-@wrap_experiment(snapshot_mode='all', log_dir='/home/carlos/resultados/',
+@wrap_experiment(snapshot_mode='all', log_dir='/home/reyjc/resultados/',
                  prefix='experiments')
 def maml_ppo_resnet_maze(ctxt, seed, epochs, episodes_per_task,
                          meta_batch_size, max_episode_length, inner_lr,

@@ -391,7 +391,10 @@ class Trainer:
 
         log_dir = self._snapshotter.snapshot_dir
         summary_file = os.path.join(log_dir, 'experiment.json')
-        dump_json(summary_file, self)
+        # TODO[Sergio]: Comento el dump_json. Llena la memoria, pero no se si
+        #  es necesario. Creo que alguno de las variables contiene el entorno y
+        #  lo está serializando. De otra forma no me explco que de problemas.
+        # dump_json(summary_file, self)
 
         average_return = self._algo.train(self)
         self._shutdown_worker()

@@ -14,7 +14,6 @@ from garage.torch.policies import GaussianMLPPolicy
 from garage.torch.value_functions import GaussianMLPValueFunction
 from garage.trainer import Trainer
 
-
 @wrap_experiment
 def ppo_pendulum(ctxt=None, seed=1):
     """Train PPO with InvertedDoublePendulum-v2 environment.
@@ -55,5 +54,8 @@ def ppo_pendulum(ctxt=None, seed=1):
     trainer.setup(algo, env)
     trainer.train(n_epochs=100, batch_size=10000)
 
+info = {
+    'log_dir': '/home/reyjc/resultados/',
+    'use_existing_dir': True}
 
-ppo_pendulum(seed=1)
+ppo_pendulum(info, seed=1)
