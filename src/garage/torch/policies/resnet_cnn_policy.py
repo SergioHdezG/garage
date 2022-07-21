@@ -122,11 +122,18 @@ class ResNetCNNPolicy(StochasticPolicy):
             dict[str, torch.Tensor]: Additional agent_info, as torch Tensors.
                 Do not need to be detached, and can be on any device.
         """
+        # TODO[Sergio]: he modificado los faltten que se hacen en garage/src/
+        #  garage/toch/policies/stochastic_policy.py porque hacer un reshape
+        #  aquí puede estar dando problemas.
         # We're given flattened observations.
-        observations = observations.reshape(
-            -1, *self._env_spec.observation_space.shape)
+        # observations = observations.reshape(
+        #     -1, *self._env_spec.observation_space.shape)
         # Reshape to be compatible with NCHW
-        obs = observations.permute((0, 3, 1, 2))
+        if len(observations.shape) == 4:
+            obs = observations.permute((0, 3, 1, 2))
+        elif len(observations.shape) == 5:
+            obs = observations.permute((0, 1, 4, 2, 3))
+            obs = obs.unsqueeze(0)
         obs = self._preprocess(obs)
         if torch.cuda.is_available():
             obs.to('cuda')

@@ -1,4 +1,4 @@
-name: garage
+name: garage-habitat
 channels:
   - pytorch
   - conda-forge

@@ -118,6 +118,7 @@ class GaussianMLPValueFunction(ValueFunction):
                 shape :math:`(P, O*)`.
 
         """
+        # TODO[Sergio]: Si es imagen le hace un flatten.
         if self.is_image:
             # Flatten the tensor in order to be fed into the value function
             if len(obs.shape) > 4:
