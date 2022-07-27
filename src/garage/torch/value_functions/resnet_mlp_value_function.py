@@ -81,25 +81,30 @@ class ResNetMLPValueFunction(ValueFunction):
                  output_b_init=nn.init.zeros_,
                  name='ResNetCNNValueFunction',
                  layer_normalization=False,
-                 is_image=None):
+                 is_image=None,
+                 resnet=None):
 
         super(ResNetMLPValueFunction, self).__init__(env_spec, name)
 
         self.freeze = freeze
-        self._resnet_module = models.resnet18(pretrained=True)
+        if resnet is None:
+            self._resnet_module = models.resnet18(pretrained=True)
+            if self.freeze:
+                self._resnet_module.eval()
+                for param in self._resnet_module.parameters():
+                    param.requires_grad = False
+
+            input_dim = self._resnet_module.fc.in_features
+
+            # Delete last fc layer of resnet
+            self._resnet_module = torch.nn.Sequential(
+                *(list(self._resnet_module.children())[:-1]))
+        else:
+            self._resnet_module = resnet
+
+
         self._preprocess = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                 std=[0.229, 0.224, 0.225])
-
-        if self.freeze:
-            self._resnet_module.eval()
-            for param in self._resnet_module.parameters():
-                param.requires_grad = False
-
-        input_dim = self._resnet_module.fc.in_features
-
-        # Delete last fc layer of resnet
-        self._resnet_module = torch.nn.Sequential(
-            *(list(self._resnet_module.children())[:-1]))
 
         self.is_image = is_image
         output_dim = 1
@@ -134,16 +139,32 @@ class ResNetMLPValueFunction(ValueFunction):
         """
         if self.is_image:
             # Flatten the tensor in order to be fed into the value function
-            if len(obs.shape) > 4:
-                obs = obs.flatten(start_dim=2)
-            else:
-                obs = obs.flatten(start_dim=1)
+            # if len(obs.shape) > 4:
+            #     obs = obs.flatten(start_dim=2)
+            # else:
+            #     obs = obs.flatten(start_dim=1)
 
-        mlp_output = self.module(obs)
-        probs = torch.softmax(mlp_output, dim=1)
-        dist = torch.distributions.Categorical(probs=probs)
-        ll = dist.log_prob(returns.reshape(-1, 1))
-        loss = -ll.mean()
+            if len(obs.shape) == 4:
+                obs = obs.permute((0, 3, 1, 2))
+            elif len(obs.shape) == 5:
+                obs = obs.permute((0, 1, 4, 2, 3))
+                obs = obs.squeeze(0)
+
+        obs = self._preprocess(obs)
+        if torch.cuda.is_available():
+            obs.to('cuda')
+        resnet_output = self._resnet_module(obs)
+        # Delete non batch dimensions
+        resnet_output = resnet_output.reshape(resnet_output.shape[0], -1)
+        mlp_output = self._mlp_module(resnet_output)[0]
+
+        # probs = torch.softmax(mlp_output, dim=0)
+        # dist = torch.distributions.Categorical(probs=probs)
+        # ll = dist.log_prob(returns.reshape(-1, 1))
+        # loss = -ll.mean()
+        values = mlp_output
+        returns = torch.unsqueeze(returns, 0)
+        loss = torch.mean(torch.square(returns - values))
         return loss
 
     # pylint: disable=arguments-differ
@@ -159,11 +180,19 @@ class ResNetMLPValueFunction(ValueFunction):
                 shape :math:`(P, O*)`.
 
         """
+        # TODO[Sergio]: he modificado los faltten que se hacen en garage/src/
+        #  garage/toch/policies/stochastic_policy.py porque hacer un reshape
+        #  aquí puede estar dando problemas.
         # We're given flattened observations.
-        obs = obs.reshape(
-            -1, *self._env_spec.observation_space.shape)
+        # obs = obs.reshape(
+        #     -1, *self._env_spec.observation_space.shape)
         # Reshape to be compatible with NCHW
-        obs = obs.permute((0, 3, 1, 2))
+        if len(obs.shape) == 4:
+            obs = obs.permute((0, 3, 1, 2))
+        elif len(obs.shape) == 5:
+            obs = obs.permute((0, 1, 4, 2, 3))
+            obs = obs.squeeze(0)
+
         obs = self._preprocess(obs)
         if torch.cuda.is_available():
             obs.to('cuda')
@@ -172,4 +201,6 @@ class ResNetMLPValueFunction(ValueFunction):
         resnet_output = resnet_output.reshape(resnet_output.shape[0], -1)
         mlp_output = self._mlp_module(resnet_output)[0]
 
+        mlp_output = mlp_output.unsqueeze(0)
+        mlp_output = mlp_output.squeeze(-1)
         return mlp_output

@@ -133,7 +133,8 @@ class ResNetCNNPolicy(StochasticPolicy):
             obs = observations.permute((0, 3, 1, 2))
         elif len(observations.shape) == 5:
             obs = observations.permute((0, 1, 4, 2, 3))
-            obs = obs.unsqueeze(0)
+            obs = obs.squeeze(0)
+
         obs = self._preprocess(obs)
         if torch.cuda.is_available():
             obs.to('cuda')
