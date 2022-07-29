@@ -101,7 +101,9 @@ class ResNetMLPValueFunction(ValueFunction):
                 *(list(self._resnet_module.children())[:-1]))
         else:
             self._resnet_module = resnet
-
+            out_aux = torch.reshape(self._resnet_module(torch.rand((1, 3, 600, 600))), (-1,))
+            out_aux = torch.squeeze(out_aux)
+            input_dim = int(out_aux.data.shape[0])
 
         self._preprocess = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                 std=[0.229, 0.224, 0.225])
@@ -148,7 +150,7 @@ class ResNetMLPValueFunction(ValueFunction):
                 obs = obs.permute((0, 3, 1, 2))
             elif len(obs.shape) == 5:
                 obs = obs.permute((0, 1, 4, 2, 3))
-                obs = obs.squeeze(0)
+                obs = torch.flatten(obs, start_dim=0, end_dim=1)
 
         obs = self._preprocess(obs)
         if torch.cuda.is_available():
@@ -187,20 +189,34 @@ class ResNetMLPValueFunction(ValueFunction):
         # obs = obs.reshape(
         #     -1, *self._env_spec.observation_space.shape)
         # Reshape to be compatible with NCHW
+        orig_shape = obs.shape
         if len(obs.shape) == 4:
             obs = obs.permute((0, 3, 1, 2))
         elif len(obs.shape) == 5:
             obs = obs.permute((0, 1, 4, 2, 3))
-            obs = obs.squeeze(0)
+            obs = torch.flatten(obs, start_dim=0, end_dim=1)
 
         obs = self._preprocess(obs)
         if torch.cuda.is_available():
             obs.to('cuda')
+        # try:
         resnet_output = self._resnet_module(obs)
         # Delete non batch dimensions
         resnet_output = resnet_output.reshape(resnet_output.shape[0], -1)
         mlp_output = self._mlp_module(resnet_output)[0]
 
         mlp_output = mlp_output.unsqueeze(0)
-        mlp_output = mlp_output.squeeze(-1)
+        # mlp_output = mlp_output.reshape((orig_shape[0], mlp_output.shape[1:]))
+        # TODO [Sergio]: Check el reshape
+        mlp_output = mlp_output.reshape((orig_shape[0], -1))
+        # mlp_output = mlp_output.squeeze(-1)
+        # except:
+        #     print(f"No se han corregido las dimensiones del input.")
+        #     if len(obs.shape) == 4:
+        #         obs = obs.permute((0, 3, 1, 2))
+        #     elif len(obs.shape) == 5:
+        #         obs = obs.permute((0, 1, 4, 2, 3))
+        #         obs = obs.squeeze(0)
+        #         print()
+
         return mlp_output

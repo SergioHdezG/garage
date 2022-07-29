@@ -74,7 +74,6 @@ class ResNetCNNPolicy(StochasticPolicy):
                  output_w_init=nn.init.xavier_uniform_,
                  output_b_init=nn.init.zeros_,
                  name='ResNetCNNPolicy'):
-
         if not isinstance(env_spec.action_space, akro.Discrete):
             raise ValueError('CategoricalMLPPolicy only works '
                              'with akro.Discrete action space.')
@@ -133,7 +132,7 @@ class ResNetCNNPolicy(StochasticPolicy):
             obs = observations.permute((0, 3, 1, 2))
         elif len(observations.shape) == 5:
             obs = observations.permute((0, 1, 4, 2, 3))
-            obs = obs.squeeze(0)
+            obs = torch.flatten(obs, start_dim=0, end_dim=1)
 
         obs = self._preprocess(obs)
         if torch.cuda.is_available():

@@ -154,6 +154,7 @@ class VPG(RLAlgorithm):
             ]))
         valids = eps.lengths
         with torch.no_grad():
+
             baselines = self._value_function(obs)
 
         if self._maximum_entropy:
